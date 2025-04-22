@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    write:
+      jdbc-url: jdbc:mysql://project6550.cluster-czaks8se8a2j.us-west-2.rds.amazonaws.com:3306/social_media?useSSL=false&serverTimezone=UTC
+      username: admin
+      password: yuxichen
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
+    read:
+      jdbc-url: jdbc:mysql://project6550.cluster-ro-czaks8se8a2j.us-west-2.rds.amazonaws.com:3306/social_media?useSSL=false&serverTimezone=UTC
+      username: admin
+      password: yuxichen
+      driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: update # 生产环境建议设置为none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  # Redis
+  redis:
+    host: 54.213.123.143
+    port: 6379
+
+  # Kafka
+  kafka:
+    bootstrap-servers: 54.213.123.143:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: social-media-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+# JWT
+jwt:
+  secret: 04ca023b39512e46d0c2cf4b48d5aac61d34302994c87ed4eff225dcf3b0a218739f3897051a057f9b846a69ea2927a587044164b7bae5e1306219d50b588cb1
+  expiration: 86400000 # 24小时
+logging:
+  level:
+    org.hibernate.SQL: debug         # SQL 语句本体
+    org.hibernate.type.descriptor.sql.BasicBinder: trace  # SQL 参数绑定
+    org.springframework.transaction: debug       # Spring事务相关日志
+    org.springframework.orm.jpa: debug           # JPA EntityManager事务绑定
+    org.springframework.jdbc.datasource: debug   # 数据源行为（事务获取/释放）
+
