@@ -17,6 +17,8 @@ Traditional social media platforms struggle to maintain performance under high r
 ## 🧩 Solution Overview
 
 This architecture follows the **CQRS principle** (Command Query Responsibility Segregation), separates read/write loads, uses Kafka for async reliability, and relies on Redis for performance:
+<img width="793" alt="image" src="https://github.com/user-attachments/assets/01846080-8fad-4730-bec9-edc31428bcd0" />
+
 
 ---
 
