@@ -16,44 +16,68 @@ Traditional social media platforms struggle to maintain performance under high r
 
 ## 🧩 Solution Overview
 
-The system adopts a **CQRS architecture** with decoupled services for reading and writing, and adds a lightweight access control layer for enhanced security on reads.:
-
-### 🧱 Architecture Components
-
-| Component       | Technology     | Role                                        |
-| --------------- | -------------- | ------------------------------------------- |
-| Command Service | MySQL          | Handles posts, comments, and likes (writes) |
-| Query Service   | MongoDB, Redis | Serves read requests, supports caching      |
-| Access Control  | AWS Lambda     | Verifies token before allowing data access  |
-
-### 🔁 Data Flow
-
-- User creates a post → Command Service writes to MySQL
-- Internal sync script/process updates MongoDB and Redis directly
-- User requests content →
-  ① Request goes through AWS Lambda for token validation →
-  ② If valid, Query Service serves data from Redis or MongoDB
+This architecture follows the **CQRS principle** (Command Query Responsibility Segregation), separates read/write loads, uses Kafka for async reliability, and relies on Redis for performance:
 
 ---
 
-## ⚙️ Tech Stack
+## 🔁 Request Types
 
-- **MySQL** – Primary write database
-- **MongoDB** – Flexible read store
-- **Redis** – Hot data cache for low-latency access
-- **JWT** – Token-based authentication to control access to GET requests
-- **AWS Lambda** – Lightweight access control layer to validate JWT tokens before data access
-- **JMeter** – Performance testing under concurrent load
+| Request Type | Processing Path |
+|--------------|------------------|
+| `GET`        | Query Path       |
+| `POST`       | Command Path     |
 
 ---
 
-## 🚀 Key Features
+## 🔍 GET Request Flow (Read Path)
 
-- **Read-Write Decoupling**: Enables independent scaling
-- **Redis Caching**: Reduces latency for popular content
-- **JWT Authentication**: Ensures that only authorized users can access query endpoints
-- **AWS Lambda Access Control**: Adds a lightweight validation layer before data retrieval
-- **Future-Ready**: Architecture supports real-time feeds and notification services
+1. A user sends a `GET` request.
+2. The request is routed through an **Application Load Balancer**.
+3. It is distributed to one of the auto-scaled **GET servers**.
+4. The server checks **Redis (ElastiCache)**:
+   - If a cache hit: returns immediately.
+   - If a cache miss: queries the **MySQL Read Replica (Slave DB)**.
+5. Read replicas stay in sync with the primary database.
+
+> ✅ This path enables fast reads and reduces pressure on the main DB.
+
+---
+
+## ✍️ POST Request Flow (Write Path)
+
+1. A user sends a `POST` request (e.g., liking a post).
+2. The **POST server** receives the request.
+3. Instead of writing to the database directly, it:
+   - Sends the event to **Kafka** as a message.
+4. A **Kafka consumer** processes the event:
+   - Writes data to the **MySQL Primary DB**.
+   - Updates **Redis** (write-through caching).
+   - Optionally logs the action or triggers downstream services.
+
+> ✅ This ensures fast response time, high throughput, and flexible decoupled processing.
+
+---
+
+## 🛢️ Database: Read/Write Split
+
+| Role       | Description                                |
+|------------|--------------------------------------------|
+| Master DB  | Handles all **write** operations (via Kafka consumer). |
+| Slave DBs  | Handles all **read** operations.           |
+
+- Data is replicated from the master to slaves asynchronously.
+
+---
+
+## 🚀 Key Benefits
+
+- ✅ **Read/Write separation** improves load distribution
+- ✅ **Redis caching** reduces DB pressure and latency
+- ✅ **Kafka async writes** provide better scalability and decoupling
+- ✅ **Auto-scaling GET servers** handle traffic spikes
+- ✅ **Event-driven design** allows easy integration with new consumers
+
+---
 
 ---
 
@@ -70,23 +94,9 @@ We use **Apache JMeter** to simulate realistic load and capture metrics.
 
 ### Key Metrics
 
-- 🕒 **P99 Latency** (goal: < 50ms for reads)
-- ⚡ **Throughput (TPS)** comparison before/after CQRS
-- 📉 **Redis Hit Ratio** & DB load reduction
-- 🔎 **Read efficiency** improvements
 
 ---
 
-## 📂 Project Structure
-
-- /command-service/ – Handles write operations and syncs data to read stores (MySQL → MongoDB/Redis)
-- /query-service/ – Handles read operations with Redis caching and MongoDB fallback
-- /access-control/ – AWS Lambda function for JWT validation before read access
-- /jmeter-tests/ – Load testing scripts and test plans
-- /docs/design.md – System architecture and implementation notes
-- README.md – Project overview and usage guide
-
----
 
 ## 🔮 Future Work
 
