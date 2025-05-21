@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: placeholder-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: placeholder-nginx
+  template:
+    metadata:
+      labels:
+        app: placeholder-nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
